@@ -2,7 +2,7 @@
 // @name         FoldingDeepSeek
 // @name:zh-CN   DeepSeek折叠
 // @namespace    https://greasyfork.org/users/1490581
-// @version      1.1.1
+// @version      1.1.2
 // @description  TL;DR: 超弦领域折叠装置，启动！将DeepSeek酱的知识洪流压缩进克莱因瓶的口袋宇宙吧(◕ᴗ◕✿)
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=deepseek.com
 // @match        https://chat.deepseek.com/*
@@ -41,22 +41,9 @@
     }
   }
 
-  function getRoot() { return Array.from(document.querySelectorAll('div.scrollable>div:has(div>textarea#chat-input)>div:first-child>div')) }
+  function getRoot() { return Array.from(document.querySelectorAll('.ds-scroll-area div:has(>.ds-message)')) }
 
   function init() {
-    const elEvent = document.querySelector('div:has(>div>div.scrollable textarea#chat-input)') || document.querySelector('div#root>div.ds-theme div:has(>div>div>div>div>div>div>textarea#chat-input)')
-    elEvent.addEventListener('click', (event) => {
-      const target = event.target.closest('div')
-      if (!target.matches('div:has(>svg:only-child[viewBox="0 0 30 30"]>path:only-child[fill="#4D6BFE"][fill-rule="nonzero"])')) {
-        return
-      }
-      const root = target.parentElement
-      var btnCollapse = target.parentElement.querySelector('div.ds-flex qs-icon[name$=up]')
-      if (!btnCollapse) {
-        insertFoldingActionBtn(root)
-      }
-      QsIcon.toggleFolding(event, !root.matches('.qs-collapse'), root)
-    })
 
 
     // 插入导航面板和QsIcon模板
@@ -83,7 +70,7 @@
 
     // const config = { childList: true, subtree: true }
     // const observer = new MutationObserver(fnMutationObserver)
-    // observer.observe(document.querySelectorAll('.scrollable')[1], config)
+    // observer.observe(document.querySelectorAll('.ds-scroll-area')[1], config)
     // // observer.disconnect()
     // function fnMutationObserver(mutationsList, observer) {
     //   if( !document.querySelector('qs-icon[name=qs-folding]').expand) {
@@ -101,27 +88,29 @@
 
 
     QsIcon.removeHistory = async () => {
-      const curr = document.querySelector('div.scrollable div.b64fb9ae[tabindex]>div[tabindex]:has(>div.ds-icon:only-child>svg:only-child)')
+      const curr = document.querySelector('div.ds-scroll-area a.b64fb9ae[tabindex]>div>div[tabindex]')
       if (!curr) {
-        document.querySelector('div.scrollable div>div[tabindex]:has(>div[tabindex]>div.ds-icon:only-child>svg:only-child)').click()
+        //document.querySelector('div.ds-scroll-area div>div[tabindex]:has(>div[tabindex]>div.ds-icon:only-child>svg:only-child)').click()
         return
       }
 
-      var next = curr.parentElement.nextElementSibling
-      while (next && !next.matches('div>div[tabindex]:has(>div[tabindex]>div.ds-icon:only-child>svg:only-child)')) {
+      // 同天查找下一个历史
+      var next = curr.parentElement.parentElement.nextElementSibling
+      while (next && !next.matches('div.ds-scroll-area a[tabindex]:has(>div>div[tabindex])')) {
         next = next.nextElementSibling
       }
-      for (var i = curr.parentElement.parentElement; !next && (i = i.nextElementSibling);) {
-        next = i.querySelector('div>div[tabindex]:has(>div[tabindex]>div.ds-icon:only-child>svg:only-child)')
+      // 没有，在前一天查找
+      for (var i = curr.parentElement.parentElement.parentElement; !next && (i = i.nextElementSibling);) {
+        next = i.querySelector('div.ds-scroll-area a[tabindex]')
       }
 
       curr.click()
       await new Promise(resolve => setTimeout(resolve, 100))
-      document.querySelector('.ds-floating-position-wrapper.ds-theme>.ds-dropdown-menu.ds-elevated[role=menu]>.ds-dropdown-menu-option.ds-dropdown-menu-option--error').click()
+      document.querySelector('.ds-floating-container>.ds-theme>.ds-dropdown-menu.ds-elevated[role=menu]>.ds-dropdown-menu-option.ds-dropdown-menu-option--error').click()
       if (next) {
         for (var i = 0; i < 30 * 10; ++i) {
           await new Promise(resolve => setTimeout(resolve, 100))
-          if (!document.querySelector('div.scrollable div.b64fb9ae[tabindex]>div[tabindex]:has(>div.ds-icon:only-child>svg:only-child)')) {
+          if (!document.querySelector('div.ds-scroll-area a.b64fb9ae[tabindex]>div>div[tabindex]')) {
             next.click()
             if (document.getElementById('qs-container').style.display !== 'none') {
               await new Promise(resolve => setTimeout(resolve, 500))
@@ -183,9 +172,9 @@
       } else {
         root.classList.remove('qs-collapse')
       }
-      const first = root.querySelector('div.ds-markdown')?.previousElementSibling
-      if (first && (flagFolding === first.childElementCount > 1)) {
-        first.firstChild.click()
+      const first = root.querySelector('div.ds-message')?.firstChild
+      if (first && first.childElementCount > 3) {
+        first.children[0].click()
       }
     }
 
@@ -298,7 +287,7 @@
     text-overflow: ellipsis;
     word-break: break-all;
   }
-  div.qs-collapse>div.ds-markdown {
+  div.qs-collapse>div.ds-message {
     max-height: 200px;
     overflow: auto;
   }
